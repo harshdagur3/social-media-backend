@@ -6,5 +6,6 @@ const router = Router();
 
 router.get("/profile", authMiddleware, getProfile);
 router.patch("/profile", authMiddleware, updateProfile);
+router.delete("/profile", authMiddleware, deleteProfile);
 
 export default router;
