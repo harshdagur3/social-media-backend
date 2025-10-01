@@ -56,3 +56,17 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     }
 }
 
+export const deleteProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as AuthRequest).user?.id;
+        if (!userId) return res.status(401).json({ error: "unauthorized" });
+
+        const deletedUser = await User.findByIdAndDelete(userId);
+
+        if (!deletedUser) return res.status(404).json({ error: "user not found!" });
+
+        return res.status(200).json({ message: "Profile deleted successfully" });
+    } catch (error) {
+        next(error);
+    }
+}
