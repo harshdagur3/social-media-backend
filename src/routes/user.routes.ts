@@ -1,9 +1,10 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { getProfile } from "../controllers/user.controller";
+import { deleteProfile, getProfile, updateProfile } from "../controllers/user.controller";
 
 const router = Router();
 
 router.get("/profile", authMiddleware, getProfile);
+router.patch("/profile", authMiddleware, updateProfile);
 
 export default router;
