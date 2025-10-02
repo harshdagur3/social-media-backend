@@ -1,17 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { Post } from "../models/post.model";
+import { postSchema } from "../validations/post.validation";
 
 export const createPost = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { title, content } = req.body;
-        if (!title || !content) return res.status(400).json({ error: "Title or content required" });
-
+        const parsed = postSchema.parse(req.body);
+      
         const userId = (req as AuthRequest).user?.id;
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        const post = await Post.create({ title, content, author: userId });
-        return res.status(200).json(post);
+        const post = await Post.create({ title:parsed.title, content:parsed.content, author: userId });
+        return res.status(201).json(post);
 
     } catch (error) {
         next(error);
@@ -43,7 +43,7 @@ export const getPostById = async (req: Request, res: Response, next: NextFunctio
 export const updatePost = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const { title, content } = req.body;
+        const parsed = postSchema.partial().parse(req.body);
         const userId = (req as AuthRequest).user?.id;
 
         //check if logged-in user is author
@@ -52,7 +52,7 @@ export const updatePost = async (req: Request, res: Response, next: NextFunction
         if (post.author.toString() !== userId) return res.status(403).json({ error: "Forbidden" });
 
         //update post
-        const updatedPost = await Post.findByIdAndUpdate(id, { title, content }, { new: true })
+        const updatedPost = await Post.findByIdAndUpdate(id, { title:parsed.title, content:parsed.content }, { new: true })
             .populate("author", "username");
         
         return res.status(200).json(updatedPost);
