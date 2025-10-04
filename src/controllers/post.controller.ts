@@ -78,3 +78,16 @@ export const deletePost = async (req: Request, res: Response,next: NextFunction)
     }
 
 }
+
+export const getMyPosts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        
+        const userId = (req as AuthRequest).user?.id;
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+        const posts = await Post.find({ author: userId }).populate("author", "username");
+        return res.status(200).json(posts);
+
+    } catch (error) {
+        next(error);
+    }
+}
