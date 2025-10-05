@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { Post } from "../models/post.model";
 import { postSchema } from "../validations/post.validation";
+import mongoose from "mongoose";
 
 export const createPost = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -90,4 +91,67 @@ export const getMyPosts = async (req: Request, res: Response, next: NextFunction
     } catch (error) {
         next(error);
     }
+}
+
+// export const likePost = async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         const userId:any = (req as AuthRequest).user?.id;
+//         const postId = req.params.id;
+//         if (!userId) return res.status(401).json({ error: "Unauthorized" });
+//         // console.log("Post ID received:", postId);
+//         const post = await Post.findById(postId);
+//         if (!post) return res.status(404).json("Post not found");
+
+//         if (post.likes.includes(userId)) return res.status(400).json({ message: "Already liked" });
+
+//         post.likes.push(userId);
+//         await post.save();
+
+//         res.status(200).json(post);
+//     } catch (error) {
+//         next(error);
+//     }
+// }
+
+export const likePost = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId:any = (req as AuthRequest).user?.id;
+        const postId = req.params.id;
+
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ error: "Post not found" });
+
+        if (post.likes.includes(userId)) {
+            return res.status(400).json({ message: "Already liked" });
+        }
+
+        post.likes.push(userId);
+        await post.save();
+        res.status(200).json({ message: "Post liked successfully" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const unlikePost = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId:any = (req as AuthRequest).user?.id;
+        const postId = req.params.id;
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ error: "Post not found" });
+
+        if (!post.likes.includes(userId)) {
+            return res.status(400).json({ message: "You have not liked this post" });
+        }
+
+        post.likes = post.likes.filter(id => id.toString() !== userId);
+        await post.save();
+        res.status(200).json({ message: "Post unliked successfully" });
+    } catch (error) {
+        next(error);
+    }    
 }
