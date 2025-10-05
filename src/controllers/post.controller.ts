@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { Post } from "../models/post.model";
 import { postSchema } from "../validations/post.validation";
-import mongoose from "mongoose";
+import { Comment } from "../models/comment.model";
 
 export const createPost = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -33,7 +33,12 @@ export const getAllPosts = async (req: Request, res: Response, next: NextFunctio
 export const getPostById = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const post = await Post.findById(id).populate("author", "username");
+        const post = await Post.findById(id)
+            .populate("author", "username")
+            .populate({
+                path: "comments",
+                populate:{path:"author",select:"username"},
+            });
         if (!post) return res.status(404).json({ error: "post not found" });
         return res.status(200).json(post);
     } catch (error) {
@@ -93,25 +98,6 @@ export const getMyPosts = async (req: Request, res: Response, next: NextFunction
     }
 }
 
-// export const likePost = async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//         const userId:any = (req as AuthRequest).user?.id;
-//         const postId = req.params.id;
-//         if (!userId) return res.status(401).json({ error: "Unauthorized" });
-//         // console.log("Post ID received:", postId);
-//         const post = await Post.findById(postId);
-//         if (!post) return res.status(404).json("Post not found");
-
-//         if (post.likes.includes(userId)) return res.status(400).json({ message: "Already liked" });
-
-//         post.likes.push(userId);
-//         await post.save();
-
-//         res.status(200).json(post);
-//     } catch (error) {
-//         next(error);
-//     }
-// }
 
 export const likePost = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -154,4 +140,37 @@ export const unlikePost = async (req: Request, res: Response, next: NextFunction
     } catch (error) {
         next(error);
     }    
+}
+
+export const addComment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const postId = req.params.id;
+        const { text } = req.body;
+
+        const userId = (req as AuthRequest).user?.id;
+        if (!userId) res.status(401).json({ error: "Unauthorized" });
+        if (!text) res.status(400).json({ error: "Text required" });
+        const post:any = await Post.findById(postId);
+        if (!post) res.status(404).json({ error: "post not found" });
+
+        const createComment = await Comment.create({
+            post: post._id,
+            author: userId,
+            text
+        });
+
+        (post as any).comments.push(createComment._id);
+        await post.save();
+
+        const updatedPost = await Post.findById(postId)
+            .populate("author", "username")
+            .populate({
+                path: "comments",
+                populate: { path: "author", select: "username" }
+            });
+        return res.status(200).json(updatedPost);
+
+    } catch (error) {
+        next(error);
+    }
 }
