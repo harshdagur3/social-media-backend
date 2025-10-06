@@ -1,17 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
-import { Post } from "../models/post.model";
+import { IPost, Post } from "../models/post.model";
 import { postSchema } from "../validations/post.validation";
 import { Comment } from "../models/comment.model";
 
 export const createPost = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const parsed = postSchema.parse(req.body);
-      
+
         const userId = (req as AuthRequest).user?.id;
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        const post = await Post.create({ title:parsed.title, content:parsed.content, author: userId });
+        const post = await Post.create({ title: parsed.title, content: parsed.content, author: userId });
         return res.status(201).json(post);
 
     } catch (error) {
@@ -37,7 +37,7 @@ export const getPostById = async (req: Request, res: Response, next: NextFunctio
             .populate("author", "username")
             .populate({
                 path: "comments",
-                populate:{path:"author",select:"username"},
+                populate: { path: "author", select: "username" },
             });
         if (!post) return res.status(404).json({ error: "post not found" });
         return res.status(200).json(post);
@@ -58,16 +58,16 @@ export const updatePost = async (req: Request, res: Response, next: NextFunction
         if (post.author.toString() !== userId) return res.status(403).json({ error: "Forbidden" });
 
         //update post
-        const updatedPost = await Post.findByIdAndUpdate(id, { title:parsed.title, content:parsed.content }, { new: true })
+        const updatedPost = await Post.findByIdAndUpdate(id, { title: parsed.title, content: parsed.content }, { new: true })
             .populate("author", "username");
-        
+
         return res.status(200).json(updatedPost);
     } catch (error) {
         next(error);
     }
 }
 
-export const deletePost = async (req: Request, res: Response,next: NextFunction) => {
+export const deletePost = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { postId }: any = req.params.id;
         const userId = (req as AuthRequest).user?.id;
@@ -87,7 +87,7 @@ export const deletePost = async (req: Request, res: Response,next: NextFunction)
 
 export const getMyPosts = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        
+
         const userId = (req as AuthRequest).user?.id;
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
         const posts = await Post.find({ author: userId }).populate("author", "username");
@@ -101,7 +101,7 @@ export const getMyPosts = async (req: Request, res: Response, next: NextFunction
 
 export const likePost = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId:any = (req as AuthRequest).user?.id;
+        const userId: any = (req as AuthRequest).user?.id;
         const postId = req.params.id;
 
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -123,7 +123,7 @@ export const likePost = async (req: Request, res: Response, next: NextFunction) 
 
 export const unlikePost = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId:any = (req as AuthRequest).user?.id;
+        const userId: any = (req as AuthRequest).user?.id;
         const postId = req.params.id;
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -139,7 +139,7 @@ export const unlikePost = async (req: Request, res: Response, next: NextFunction
         res.status(200).json({ message: "Post unliked successfully" });
     } catch (error) {
         next(error);
-    }    
+    }
 }
 
 export const addComment = async (req: Request, res: Response, next: NextFunction) => {
@@ -150,7 +150,7 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
         const userId = (req as AuthRequest).user?.id;
         if (!userId) res.status(401).json({ error: "Unauthorized" });
         if (!text) res.status(400).json({ error: "Text required" });
-        const post:any = await Post.findById(postId);
+        const post: any = await Post.findById(postId);
         if (!post) res.status(404).json({ error: "post not found" });
 
         const createComment = await Comment.create({
@@ -169,6 +169,30 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
                 populate: { path: "author", select: "username" }
             });
         return res.status(200).json(updatedPost);
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const deleteComment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as AuthRequest).user?.id;
+        const { postId, commentId} = req.params;
+        const post = await Post.findById(postId) as IPost;
+        if (!post) return res.status(404).json({ error: "Post not found" });
+        
+        const comment = await Comment.findById(commentId);
+        if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+        if (comment.author.toString() !== userId) return res.status(403).json({ error: "Forbidden" });
+
+        await Comment.findByIdAndDelete(commentId);
+
+        post.comments = post.comments.filter((c: { toString: () => string; }) => c.toString() !== commentId);
+        await post.save();
+
+        return res.status(200).json({ message: "Comment deleted!" });
 
     } catch (error) {
         next(error);

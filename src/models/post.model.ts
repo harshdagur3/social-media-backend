@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IPost extends Document {
+    comments: any;
     title: string;
     content: string;
     author: mongoose.Types.ObjectId; // reference to User
@@ -14,7 +15,7 @@ const postSchema: Schema = new Schema({
     content: { type: String, required: true },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true } ,//relation
     likes:[{type:Schema.Types.ObjectId,ref:"User"}],
-    comments:[{type:Schema.Types.ObjectId,ref:"Comment"}]
+    comments:[{type:Schema.Types.ObjectId,ref:"Comment",default:[]}]
 },
     { timestamps: true }
 );
