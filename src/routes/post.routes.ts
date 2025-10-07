@@ -1,6 +1,18 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { addComment, createPost, deleteComment, deletePost, getAllPosts, getMyPosts, getPostById, likePost, unlikePost, updatePost } from "../controllers/post.controller";
+import {
+    addComment,
+    createPost,
+    deleteComment,
+    deletePost,
+    editComment,
+    getAllPosts,
+    getMyPosts,
+    getPostById,
+    likePost,
+    unlikePost,
+    updatePost
+} from "../controllers/post.controller";
 
 const router = Router();
 
@@ -14,5 +26,6 @@ router.post("/posts/:id/like", authMiddleware, likePost);
 router.post("/posts/:id/unlike", authMiddleware, unlikePost);
 router.post("/posts/:id/comment", authMiddleware, addComment);
 router.delete("/posts/:postId/comments/:commentId", authMiddleware, deleteComment);
+router.put("/posts/:postId/comments/:commentId", authMiddleware, editComment);
 
 export default router;

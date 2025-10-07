@@ -198,3 +198,23 @@ export const deleteComment = async (req: Request, res: Response, next: NextFunct
         next(error);
     }
 }
+
+export const editComment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as AuthRequest).user?.id;
+        const { commentId } = req.params;
+        const {newComment} = req.body;
+        if (!newComment) return res.status(400).json({ error: "Text required to edit" });
+        const comment = await Comment.findById(commentId);
+        if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+        if (comment?.author.toString() !== userId) return res.status(403).json({ error: "Forbidden" });
+
+        comment.text = newComment;
+        await comment.save();
+        return res.status(200).json(comment);
+    } catch (error) {
+        console.error("Error updating comment:", error);
+        next(error);
+    }
+}
