@@ -124,3 +124,25 @@ export const unfollowUser = async (req: Request, res: Response, next: NextFuncti
         next(error);
     }
 }
+
+export const getFollowers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.params.id || (req as AuthRequest).user?.id;
+        const user = await User.findById(userId).populate("followers", "username");
+        if (!user) return res.status(404).json({ error: "user not found" });
+        return res.status(200).json(user.followers);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const getFollowing = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.params.id || (req as AuthRequest).user?.id;
+        const user = await User.findById(userId).populate("following", "username");
+        if (!user) return res.status(404).json({ error: "user not found" });
+        return res.status(200).json(user.following);
+    } catch (error) {
+        next(error);
+    }
+}
