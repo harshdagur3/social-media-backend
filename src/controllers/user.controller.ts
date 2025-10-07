@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import  { User } from "../models/user.model";
+import { User } from "../models/user.model";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import bcrypt from "bcrypt";
 
@@ -21,7 +21,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     try {
         const userId = (req as AuthRequest).user?.id;
         const { username, password } = req.body;
-        
+
 
         //fetches current user from db
         const user = await User.findById(userId);
@@ -40,14 +40,14 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         //if password provided, hash it before saving
         if (password) {
             const hashed = await bcrypt.hash(password, 10);
-            user.password=hashed;
+            user.password = hashed;
         }
-        
+
         //save updated user
         await user.save();
 
         //return updated user without password
-        const userObj:any = user.toObject();
+        const userObj: any = user.toObject();
         delete userObj.password;
         return res.status(200).json({ message: "Profile updated!", user: userObj });
 
@@ -66,6 +66,60 @@ export const deleteProfile = async (req: Request, res: Response, next: NextFunct
         if (!deletedUser) return res.status(404).json({ error: "user not found!" });
 
         return res.status(200).json({ message: "Profile deleted successfully" });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const followUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId: any = (req as AuthRequest).user?.id;
+        const targetUserId: any = req.params.id;
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+        if (targetUserId == userId) return res.status(400).json({ error: "Cannot follow yourself!" });
+
+        const user = await User.findById(userId);
+        const targetUser = await User.findById(targetUserId);
+
+        if (!targetUser) return res.status(404).json({ error: "user not found!" });
+
+        //check if already following
+        if (user?.following.includes(targetUserId)) {
+            return res.status(400).json({ error: "Already following" });
+        }
+
+        //push objectId's to following & followers array accordingly...
+        user?.following.push(targetUserId);
+        targetUser.followers.push(userId);
+
+        await user?.save();
+        await targetUser.save();
+
+        return res.status(200).json({ message: "User followed Succussfully!" });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const unfollowUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as AuthRequest).user?.id;
+        const targetUserId: any = req.params.id;
+
+        const user = await User.findById(userId);
+        const targetUser = await User.findById(targetUserId);
+        if (!targetUser) return res.status(404).json({ error: "user not found" });
+        if (!user?.following.includes(targetUserId)) {
+            return res.status(400).json({ error: "Already not following" });
+        }
+
+        user.following = user.following.filter(id => id.toString() !== targetUserId);
+        targetUser.followers = targetUser?.followers.filter(id => id.toString() !== userId);
+
+        await user.save();
+        await targetUser.save();
+
+        return res.status(200).json({ message: "Unfollowed user Succussfully!" });
     } catch (error) {
         next(error);
     }
