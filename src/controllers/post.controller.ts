@@ -3,6 +3,7 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 import { IPost, Post } from "../models/post.model";
 import { postSchema } from "../validations/post.validation";
 import { Comment } from "../models/comment.model";
+import { createCommentSchema, updateCommentSchema } from "../validations/comment.validation";
 
 export const createPost = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -145,21 +146,20 @@ export const unlikePost = async (req: Request, res: Response, next: NextFunction
 export const addComment = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const postId = req.params.id;
-        const { text } = req.body;
+        const { text } =  createCommentSchema.parse(req.body);
 
         const userId = (req as AuthRequest).user?.id;
         if (!userId) res.status(401).json({ error: "Unauthorized" });
-        if (!text) res.status(400).json({ error: "Text required" });
         const post: any = await Post.findById(postId);
         if (!post) res.status(404).json({ error: "post not found" });
 
-        const createComment = await Comment.create({
+        const comment = await Comment.create({
             post: post._id,
             author: userId,
             text
         });
 
-        (post as any).comments.push(createComment._id);
+        (post as any).comments.push(comment._id);
         await post.save();
 
         const updatedPost = await Post.findById(postId)
@@ -203,14 +203,14 @@ export const editComment = async (req: Request, res: Response, next: NextFunctio
     try {
         const userId = (req as AuthRequest).user?.id;
         const { commentId } = req.params;
-        const {newComment} = req.body;
-        if (!newComment) return res.status(400).json({ error: "Text required to edit" });
+        const {text} = updateCommentSchema.parse(req.body);
+        
         const comment = await Comment.findById(commentId);
         if (!comment) return res.status(404).json({ error: "Comment not found" });
 
         if (comment?.author.toString() !== userId) return res.status(403).json({ error: "Forbidden" });
 
-        comment.text = newComment;
+        comment.text = text;
         await comment.save();
         return res.status(200).json(comment);
     } catch (error) {
