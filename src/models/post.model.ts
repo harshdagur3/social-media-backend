@@ -5,7 +5,7 @@ export interface IPost extends Document {
     title: string;
     content: string;
     author: mongoose.Types.ObjectId; // reference to User
-    likes: mongoose.Types.ObjectId[];
+    likeCount: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -14,7 +14,7 @@ const postSchema: Schema = new Schema({
     title: { type: String, required: true },
     content: { type: String, required: true },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true } ,//relation
-    likes:[{type:Schema.Types.ObjectId,ref:"User"}],
+    likeCount:{type:Number,default:0},
     comments:[{type:Schema.Types.ObjectId,ref:"Comment",default:[]}]
 },
     { timestamps: true }
