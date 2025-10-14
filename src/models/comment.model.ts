@@ -17,4 +17,4 @@ const commentSchema: Schema = new Schema({
         timestamps: true
     }
 );
-export const Comment=mongoose.model<IComment>("Comment",commentSchema)
+export const Comment = mongoose.model<IComment>("Comment", commentSchema)
