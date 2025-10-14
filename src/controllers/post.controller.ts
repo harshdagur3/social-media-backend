@@ -12,7 +12,14 @@ export const createPost = async (req: Request, res: Response, next: NextFunction
         const userId = (req as AuthRequest).user?.id;
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        const post = await Post.create({ title: parsed.title, content: parsed.content, author: userId });
+        const imageUrl = req.file?.path;
+
+        const post = await Post.create({
+            title: parsed.title,
+            content: parsed.content,
+            author: userId,
+            image: imageUrl
+        });
         return res.status(201).json(post);
 
     } catch (error) {

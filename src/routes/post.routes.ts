@@ -11,10 +11,11 @@ import {
     getPostById,
     updatePost
 } from "../controllers/post.controller";
+import { upload } from "../middlewares/upload.middleware";
 
 const router = Router();
 
-router.post("/posts", authMiddleware, createPost);
+router.post("/posts", authMiddleware,upload.single("image"), createPost);
 router.get("/posts", getAllPosts);
 router.get("/posts/:id", getPostById);
 router.patch("/posts/:id", authMiddleware, updatePost);
